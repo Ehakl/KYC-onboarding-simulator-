@@ -1,0 +1,58 @@
+# =============================================================================
+# Docker Compose — Orchestrates the entire KYC application
+# =============================================================================
+#
+# WHAT IS DOCKER COMPOSE?
+# Docker Compose lets you define and run multi-container applications.
+# Instead of starting each service manually, you run one command:
+#   docker-compose up
+# And it starts everything (backend + frontend) together.
+#
+# HOW TO USE:
+#   docker-compose up --build      # Build images and start containers
+#   docker-compose up -d           # Start in detached (background) mode
+#   docker-compose down            # Stop and remove containers
+#   docker-compose logs -f         # Follow logs from all services
+#
+# =============================================================================
+
+version: "3.8"  # Docker Compose file format version
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend Service (FastAPI + Python)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend           # Build from the backend/ directory
+      dockerfile: Dockerfile       # Using this Dockerfile
+    container_name: kyc-backend    # Name the container for easy reference
+    ports:
+      - "8000:8000"                # Map host port 8000 → container port 8000
+    volumes:
+      - uploads_data:/app/uploads  # Persist uploaded files in a Docker volume
+    environment:
+      - PYTHONUNBUFFERED=1         # Show Python print() output immediately in logs
+    restart: unless-stopped        # Auto-restart if the container crashes
+
+  # ---------------------------------------------------------------------------
+  # Frontend Service (React served by Nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000  # Passed to Vite at build time
+    container_name: kyc-frontend
+    ports:
+      - "3000:80"                  # Nginx serves on port 80 inside, mapped to 3000
+    depends_on:
+      - backend                    # Frontend starts after backend is ready
+    restart: unless-stopped
+
+# =============================================================================
+# Volumes — Persistent storage that survives container restarts
+# =============================================================================
+volumes:
+  uploads_data:                    # Named volume for uploaded KYC documents

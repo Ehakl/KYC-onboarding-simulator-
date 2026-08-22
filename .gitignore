@@ -1,0 +1,49 @@
+# =============================================================================
+# .gitignore — Tells Git which files to IGNORE (not track)
+# =============================================================================
+# Why? Some files are generated, contain secrets, or are too large for Git.
+# We list patterns here so Git skips them.
+
+# ---------------------------------------------------------------------------
+# Python / Backend
+# ---------------------------------------------------------------------------
+__pycache__/          # Python bytecode cache (auto-generated)
+*.py[cod]             # Compiled Python files (.pyc, .pyo, .pyd)
+*.so                  # Compiled C extensions
+.env                  # Environment variables (may contain secrets!)
+venv/                 # Virtual environment directory
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+backend/uploads/      # Uploaded KYC documents (user data, don't commit!)
+
+# ---------------------------------------------------------------------------
+# Node.js / Frontend
+# ---------------------------------------------------------------------------
+node_modules/          # All npm packages (reinstalled via npm install)
+frontend/dist/         # Vite build output (regenerated via npm run build)
+frontend/.env          # Frontend env vars
+.env.local
+.env.*.local
+
+# ---------------------------------------------------------------------------
+# IDE / Editor
+# ---------------------------------------------------------------------------
+.vscode/               # VS Code settings
+.idea/                 # JetBrains IDE settings
+*.swp                  # Vim swap files
+*.swo
+.DS_Store              # macOS folder metadata
+
+# ---------------------------------------------------------------------------
+# Docker
+# ---------------------------------------------------------------------------
+*.log                  # Log files
+
+# ---------------------------------------------------------------------------
+# OS
+# ---------------------------------------------------------------------------
+Thumbs.db              # Windows thumbnail cache
+desktop.ini            # Windows folder settings
