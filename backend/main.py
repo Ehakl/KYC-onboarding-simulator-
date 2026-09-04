@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 # =============================================================================
 # main.py — FastAPI Application Entry Point
 # =============================================================================
@@ -126,6 +128,24 @@ def create_session(db: Session = Depends(get_db)):
 
 # ─── UPLOAD DOCUMENT + OCR ──────────────────────────────────────────────────────
 @app.post("/api/upload-document")
+
+def is_blurry(image_path: str, threshold: float = 100.0) -> bool:
+    """
+    Checks if an image is too blurry for OCR using the Variance of Laplacian method.
+    """
+    try:
+        image = cv2.imread(image_path)
+        if image is None:
+            return False
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        variance = cv2.Laplacian(gray, cv2.CV_64F).var()
+        print(f"Image Blur Variance: {variance}")
+        return variance < threshold
+    except Exception as e:
+        print(f"Blur detection error: {e}")
+        return False
+
+@app.post("/api/upload-document")
 def upload_document(
     session_id: str = Form(...),           # Session ID from form data
     file: UploadFile = File(...),          # The uploaded file
@@ -166,6 +186,15 @@ def upload_document(
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save file: {e}")
+
+    # Step 2.5: Pre-processing Fraud Detection (Blur Check)
+    if is_blurry(file_path, threshold=50.0):
+        # Delete the bad file so we don't waste storage
+        os.remove(file_path)
+        raise HTTPException(
+            status_code=400, 
+            detail="Document rejected: Image is too blurry. Please upload a clear, focused photo of the ID."
+        )
 
     # Step 3: Update session status
     db_session.document_image_path = file_path

@@ -21,6 +21,30 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const exportToCSV = () => {
+    if (sessions.length === 0) return;
+    
+    const headers = ['Session ID', 'Date', 'Status', 'Extracted Name', 'DOB', 'ID Number'];
+    const rows = sessions.map(s => [
+      s.id,
+      new Date(s.created_at).toLocaleDateString(),
+      s.status,
+      "",
+      "",
+      ""
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', 'kyc_analytics_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   // ─── FETCH DATA ON MOUNT ──────────────────────────────────────────────────
   // useEffect with an empty dependency array [] runs ONCE when the component mounts.
   // Think of it like componentDidMount() in class components.
