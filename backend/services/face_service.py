@@ -5,7 +5,41 @@
 import cv2
 import numpy as np
 import base64
-from deepface import DeepFace
+
+
+def detect_screen_spoof(image_matrix) -> bool:
+    """
+    Advanced Liveness Check:
+    Uses Fast Fourier Transform (FFT) to detect high-frequency 
+    Moiré patterns typical of taking a photo of a screen or monitor.
+    """
+    try:
+        gray = cv2.cvtColor(image_matrix, cv2.COLOR_BGR2GRAY)
+        
+        # Compute 2D Fourier Transform
+        f = np.fft.fft2(gray)
+        fshift = np.fft.fftshift(f)
+        magnitude_spectrum = 20 * np.log(np.abs(fshift) + 1e-8)
+        
+        # Analyze high-frequency components
+        rows, cols = gray.shape
+        crow, ccol = rows // 2, cols // 2
+        # Mask out the low frequencies (center)
+        mask = np.ones((rows, cols), np.uint8)
+        r = 30 # radius for low frequency removal
+        cv2.circle(mask, (ccol, crow), r, 0, -1)
+        
+        high_freq_magnitude = magnitude_spectrum * mask
+        mean_high_freq = np.mean(high_freq_magnitude)
+        
+        print(f"Liveness Check - FFT Magnitude: {mean_high_freq}")
+        # Threshold: If mean_high_freq is unusually high, it's a screen pixel grid!
+        if mean_high_freq > 185.0:  
+            return True # Spoof detected
+        return False
+    except Exception as e:
+        print(f"Spoof detection error: {e}")
+        return False
 
 def verify_faces(document_image_path: str, selfie_base64: str) -> dict:
     """
@@ -19,6 +53,8 @@ def verify_faces(document_image_path: str, selfie_base64: str) -> dict:
         dict: A dictionary containing 'is_match' (boolean) and 'similarity' (float).
     """
     
+    from deepface import DeepFace
+
     # 1. Convert the base64 selfie string into an image format OpenCV can process.
     # Base64 is often prefixed with metadata (e.g., "data:image/jpeg;base64,..."). We need to strip that.
     if "," in selfie_base64:
@@ -33,6 +69,17 @@ def verify_faces(document_image_path: str, selfie_base64: str) -> dict:
     
     if selfie_image is None:
          raise ValueError("Could not decode the selfie image.")
+
+    # 1.5: ANTI-SPOOFING LIVENESS CHECK
+    print("Running AI Anti-Spoofing Check...")
+    if detect_screen_spoof(selfie_image):
+        print("SPOOF DETECTED: Rejected!")
+        return {
+            "is_match": False,
+            "similarity": 0.0,
+            "confidence": 0.0,
+            "error": "Liveness Check Failed: Screen/Printed photo detected. Please capture a real face."
+        }
 
     # 2. Save the selfie temporarily (DeepFace often works best with file paths)
     temp_selfie_path = "uploads/temp_selfie.jpg"

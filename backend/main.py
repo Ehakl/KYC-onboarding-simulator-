@@ -277,6 +277,7 @@ def verify_face(request: FaceVerificationRequest, db: Session = Depends(get_db))
             "match": verification_result.get("is_match", False),
             "confidence": verification_result.get("confidence", 0.0),
             "similarity": verification_result.get("similarity", 0.0),
+            "error_msg": verification_result.get("error", None)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Face verification failed: {e}")
